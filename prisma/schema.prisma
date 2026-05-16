@@ -1,0 +1,251 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String         @id @default(uuid()) @db.Uuid
+  clerkId       String         @unique
+  email         String         @unique
+  name          String?
+  householdId   String?        @db.Uuid
+  household     Household?     @relation(fields: [householdId], references: [id])
+  profile       UserProfile?
+  settings      UserSettings?
+  currencies    Currency[]
+  accounts      Account[]
+  categories    Category[]
+  beneficiaries Beneficiary[]
+  exchangeRates ExchangeRate[]
+  transactions  Transaction[]
+  pantryItems   PantryItem[]
+  shoppingList  ShoppingItem[]
+  services      HomeService[]
+  tasks         HomeTask[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("users")
+}
+
+model Household {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  members   User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("households")
+}
+
+model UserProfile {
+  userId              String  @id @db.Uuid
+  name                String?
+  lastName            String?
+  baseCurrencyId      Int?
+  referenceCurrencyId Int?
+  langPreference      String  @default("es")
+  user                User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model UserSettings {
+  userId             String  @id @db.Uuid
+  showReferenceValue Boolean @default(true)
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model Currency {
+  id                     Int            @id @default(autoincrement())
+  userId                 String         @db.Uuid
+  code                   String
+  name                   String
+  symbol                 String
+  isCrypto               Boolean        @default(false)
+  user                   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accounts               Account[]
+  transactions           Transaction[]
+  baseExchangeRates      ExchangeRate[] @relation("ExchangeRateBaseCurrency")
+  referenceExchangeRates ExchangeRate[] @relation("ExchangeRateReferenceCurrency")
+
+  @@unique([userId, code])
+  @@map("currencies")
+}
+
+model Account {
+  id             String        @id @default(uuid()) @db.Uuid
+  userId         String        @db.Uuid
+  name           String
+  currencyId     Int
+  institution    String?
+  type           String
+  initialBalance Decimal       @default(0) @db.Decimal(18, 8)
+  currentBalance Decimal       @default(0) @db.Decimal(18, 8)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currency       Currency      @relation(fields: [currencyId], references: [id])
+  transactions   Transaction[]
+
+  @@unique([userId, name])
+  @@map("accounts")
+}
+
+model Category {
+  id           String        @id @default(uuid()) @db.Uuid
+  userId       String        @db.Uuid
+  name         String
+  slug         String?
+  type         String
+  icon         String?
+  parentId     String?       @db.Uuid
+  parent       Category?     @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children     Category[]    @relation("CategoryToCategory")
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@unique([userId, name])
+  @@unique([userId, slug])
+  @@map("categories")
+}
+
+model Beneficiary {
+  id           String        @id @default(uuid()) @db.Uuid
+  userId       String        @db.Uuid
+  name         String
+  slug         String?
+  type         String?
+  phone        String?
+  email        String?
+  notes        String?
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@unique([userId, name])
+  @@unique([userId, slug])
+  @@map("beneficiaries")
+}
+
+model ExchangeRate {
+  id                  String   @id @default(uuid()) @db.Uuid
+  userId              String   @db.Uuid
+  baseCurrencyId      Int
+  referenceCurrencyId Int
+  rate                Decimal  @db.Decimal(18, 8)
+  isGlobal            Boolean  @default(false)
+  date                DateTime @default(now())
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  baseCurrency        Currency @relation("ExchangeRateBaseCurrency", fields: [baseCurrencyId], references: [id])
+  referenceCurrency   Currency @relation("ExchangeRateReferenceCurrency", fields: [referenceCurrencyId], references: [id])
+
+  @@unique([userId, baseCurrencyId, referenceCurrencyId])
+  @@map("exchange_rates")
+}
+
+model Transaction {
+  id                  String       @id @default(uuid()) @db.Uuid
+  userId              String       @db.Uuid
+  accountId           String       @db.Uuid
+  categoryId          String       @db.Uuid
+  beneficiaryId       String?      @db.Uuid
+  type                String
+  amount              Decimal      @db.Decimal(18, 8)
+  currencyId          Int
+  exchangeRate        Decimal      @db.Decimal(18, 8)
+  referenceAmount     Decimal      @db.Decimal(18, 8)
+  referenceCurrencyId Int
+  description         String?
+  date                DateTime     @default(now())
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account             Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  category            Category     @relation(fields: [categoryId], references: [id])
+  beneficiary         Beneficiary? @relation(fields: [beneficiaryId], references: [id])
+  currency            Currency     @relation(fields: [currencyId], references: [id])
+
+  @@map("transactions")
+}
+
+model PantryItem {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @db.Uuid
+  name           String
+  category       String
+  currentQty     Decimal   @default(0) @db.Decimal(18, 4)
+  minQty         Decimal   @default(1) @db.Decimal(18, 4)
+  unit           String
+  expirationDate DateTime?
+  notes          String?
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("pantry_items")
+}
+
+model ShoppingItem {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  pantryItemId String?   @db.Uuid
+  name         String
+  quantity     Decimal   @default(1) @db.Decimal(18, 4)
+  isChecked    Boolean   @default(false)
+  priority     String    @default("medium")
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+  completedAt  DateTime?
+
+  @@map("shopping_items")
+}
+
+model HomeService {
+  id          String           @id @default(uuid()) @db.Uuid
+  userId      String           @db.Uuid
+  name        String
+  type        String
+  contractId  String?
+  monthlyCost Decimal?         @db.Decimal(18, 2)
+  currency    String           @default("USD")
+  frequency   String           @default("monthly")
+  dueDay      Int
+  status      String           @default("active")
+  notes       String?
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments    ServicePayment[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("home_services")
+}
+
+model ServicePayment {
+  id          String      @id @default(uuid()) @db.Uuid
+  serviceId   String      @db.Uuid
+  amount      Decimal     @db.Decimal(18, 2)
+  currency    String
+  paymentDate DateTime    @default(now())
+  reference   String?
+  notes       String?
+  service     HomeService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@map("service_payments")
+}
+
+model HomeTask {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  title       String
+  description String?
+  dueDate     DateTime?
+  priority    String    @default("medium")
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("home_tasks")
+}
