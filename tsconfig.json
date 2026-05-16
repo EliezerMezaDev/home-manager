@@ -20,7 +20,15 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./src/*"],
+      "@components/*": ["./src/components/*"],
+      "@hooks/*": ["src/shared/hooks/*"],
+      "@lib/*": ["src/shared/lib/*"],
+      "@utils/*": ["./src/utils/*"],
+      "@data/*": ["./src/data/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@shadcn/*": ["./src/shadcn/*"],
+      "@styles/*": ["./src/styles/*"]
     }
   },
   "include": [
