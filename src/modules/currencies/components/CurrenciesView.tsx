@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@shadcn/components/ui/alert-dialog"
-import { toast } from "sonner"
+import { toastError, toastSuccess } from "@shared/lib/toast-utils"
 
 interface CurrenciesViewProps {
   initialData: Currency[]
@@ -40,10 +40,10 @@ export function CurrenciesView({ initialData, userId }: CurrenciesViewProps) {
       setCurrencies((prev) =>
         prev.map((c) => (c.id === currency.id ? currency : c))
       )
-      toast.success("Moneda actualizada")
+      toastSuccess("Moneda actualizada")
     } else {
       setCurrencies((prev) => [...prev, currency])
-      toast.success("Moneda creada")
+      toastSuccess("Moneda creada")
     }
     setIsOpen(false)
     setEditingCurrency(null)
@@ -54,9 +54,9 @@ export function CurrenciesView({ initialData, userId }: CurrenciesViewProps) {
       const { deleteCurrency } = await import("../actions/currencies-actions")
       await deleteCurrency(id)
       setCurrencies((prev) => prev.filter((c) => c.id !== id))
-      toast.success("Moneda eliminada")
+      toastSuccess("Moneda eliminada")
     } catch (error) {
-      toast.error("Error al eliminar la moneda")
+      toastError("Error al eliminar la moneda")
     }
   }
 
@@ -70,7 +70,7 @@ export function CurrenciesView({ initialData, userId }: CurrenciesViewProps) {
           </p>
         </div>
         <Button onClick={() => setIsOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className="mr-2 h-6 w-6" />
           Nueva Moneda
         </Button>
       </div>
@@ -97,11 +97,15 @@ export function CurrenciesView({ initialData, userId }: CurrenciesViewProps) {
                 <CardTitle className="text-lg font-medium">
                   {currency.code}
                 </CardTitle>
-                <div className="flex items-center gap-1">
+                <div
+                  className={`flex items-center gap-1 rounded-lg p-1 ${
+                    currency.isCrypto ? "bg-orange-500/20" : "bg-green-500/20"
+                  }`}
+                >
                   {currency.isCrypto ? (
-                    <Bitcoin className="h-4 w-4 text-orange-500" />
+                    <Bitcoin className="h-6 w-6 text-orange-500" />
                   ) : (
-                    <DollarSign className="h-4 w-4 text-green-500" />
+                    <DollarSign className="h-6 w-6 text-green-500" />
                   )}
                 </div>
               </CardHeader>
@@ -117,7 +121,7 @@ export function CurrenciesView({ initialData, userId }: CurrenciesViewProps) {
                       setIsOpen(true)
                     }}
                   >
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="h-6 w-6" />
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -126,7 +130,7 @@ export function CurrenciesView({ initialData, userId }: CurrenciesViewProps) {
                         size="sm"
                         className="text-red-500"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-6 w-6" />
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>

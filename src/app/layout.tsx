@@ -4,6 +4,7 @@ import "@styles/globals.css"
 import { ThemeProvider } from "@shared/components/theme-provider"
 import { ClerkAuthProvider } from "@shared/components/clerk-provider"
 import { cn } from "@shared/lib/utils"
+import { Toaster as SonnerToaster, toast } from "sonner"
 
 const notoSans = Noto_Sans({ subsets: ["latin"], variable: "--font-sans" })
 
@@ -32,6 +33,7 @@ export default function RootLayout({
         <ClerkAuthProvider>
           <ThemeProvider>{children}</ThemeProvider>
         </ClerkAuthProvider>
+        <SonnerToaster position="bottom-right" richColors />
       </body>
     </html>
   )

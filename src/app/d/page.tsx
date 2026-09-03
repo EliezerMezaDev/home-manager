@@ -7,8 +7,9 @@ import {
 } from "@shadcn/components/ui/card"
 import { getCurrentUser } from "@shared/lib/auth-sync"
 import { prisma } from "@shared/lib/prisma"
-import { format } from "date-fns"
+import { format, subMonths, startOfMonth, endOfMonth } from "date-fns"
 import { es } from "date-fns/locale"
+import { FinancialCharts } from "@shared/components/charts/FinancialCharts"
 
 export default async function DashboardPage() {
   const clerkUser = await getCurrentUser()
@@ -21,13 +22,26 @@ export default async function DashboardPage() {
     )
   }
 
+  const now = new Date()
+  const startOfCurrentMonth = startOfMonth(now)
+  const endOfCurrentMonth = endOfMonth(now)
+  const sixMonthsAgo = subMonths(now, 6)
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+
   const [
+    accountsData,
     accountsCount,
     transactionsCount,
     pantryItemsCount,
     tasksCount,
     recentTransactions,
+    currentMonthExpenses,
+    monthlyTransactions,
   ] = await Promise.all([
+    prisma.account.findMany({
+      where: { userId: clerkUser.id },
+      include: { currency: true },
+    }),
     prisma.account.count({ where: { userId: clerkUser.id } }),
     prisma.transaction.count({ where: { userId: clerkUser.id } }),
     prisma.pantryItem.count({ where: { userId: clerkUser.id } }),
@@ -46,7 +60,104 @@ export default async function DashboardPage() {
         category: true,
       },
     }),
+    prisma.transaction.findMany({
+      where: {
+        userId: clerkUser.id,
+        type: "expense",
+        date: {
+          gte: startOfCurrentMonth,
+          lte: endOfCurrentMonth,
+        },
+      },
+      include: { category: true },
+    }),
+    prisma.transaction.findMany({
+      where: {
+        userId: clerkUser.id,
+        date: { gte: sixMonthsAgo },
+      },
+      orderBy: { date: "asc" },
+    }),
   ])
+
+  const accountsByCurrency = accountsData.map((account) => ({
+    currencyCode: account.currency?.code || "USD",
+    balance: Number(account.currentBalance),
+  }))
+
+  const totalUSD = accountsByCurrency
+    .filter((a) => a.currencyCode === "USD")
+    .reduce((sum, a) => sum + a.balance, 0)
+
+  const totalVES = accountsByCurrency
+    .filter((a) => a.currencyCode === "VES")
+    .reduce((sum, a) => sum + a.balance, 0)
+
+  const expensesByCategory = currentMonthExpenses.reduce((acc, tx) => {
+    const catName = tx.category?.name || "Sin categoría"
+    if (!acc[catName]) {
+      acc[catName] = 0
+    }
+    acc[catName] += Number(tx.referenceAmount)
+    return acc
+  }, {} as Record<string, number>)
+
+  const expensesChartData = Object.entries(expensesByCategory).map(
+    ([name, total]) => ({
+      categoryName: name,
+      total,
+    })
+  )
+
+  const monthlyMap: Record<string, { income: number; expense: number }> = {}
+
+  for (let i = 0; i < 6; i++) {
+    const month = subMonths(now, i)
+    const monthKey = format(month, "MMM", { locale: es })
+    monthlyMap[monthKey] = { income: 0, expense: 0 }
+  }
+
+  monthlyTransactions.forEach((tx) => {
+    const monthKey = format(new Date(tx.date), "MMM", { locale: es })
+    if (monthlyMap[monthKey]) {
+      if (tx.type === "income") {
+        monthlyMap[monthKey].income += Number(tx.referenceAmount)
+      } else if (tx.type === "expense") {
+        monthlyMap[monthKey].expense += Number(tx.referenceAmount)
+      }
+    }
+  })
+
+  const monthlyChartData = Object.entries(monthlyMap)
+    .map(([month, data]) => ({
+      month,
+      income: data.income,
+      expense: data.expense,
+    }))
+    .reverse()
+
+  const recentBalanceTxs = await prisma.transaction.findMany({
+    where: {
+      userId: clerkUser.id,
+      date: { gte: thirtyDaysAgo },
+    },
+    orderBy: { date: "asc" },
+  })
+
+  let runningBalance = totalUSD
+  const trendData: { date: string; balance: number }[] = []
+
+  recentBalanceTxs.forEach((tx) => {
+    if (tx.type === "income") {
+      runningBalance += Number(tx.referenceAmount)
+    } else if (tx.type === "expense") {
+      runningBalance -= Number(tx.referenceAmount)
+    }
+    trendData.push({
+      date: format(new Date(tx.date), "d MMM", { locale: es }),
+      balance: runningBalance,
+    })
+  })
 
   const stats = [
     {
@@ -100,6 +211,14 @@ export default async function DashboardPage() {
         ))}
       </div>
 
+      <FinancialCharts
+        expensesByCategory={expensesChartData}
+        monthlyData={monthlyChartData}
+        trendData={trendData}
+        totalUSD={totalUSD}
+        totalVES={totalVES}
+      />
+
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -150,9 +269,9 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-3">
             <QuickAction href="/d/transactions" label="Nueva Transacción" />
-            <QuickAction href="/d/pantry" label="Ver Despensa" />
-            <QuickAction href="/d/shopping" label="Lista de Compras" />
-            <QuickAction href="/d/services" label="Mis Servicios" />
+            <QuickAction href="/d/accounts" label="Ver Cuentas" />
+            <QuickAction href="/d/categories" label="Categorías" />
+            <QuickAction href="/d/exchange-rates" label="Tasas" />
           </CardContent>
         </Card>
       </div>

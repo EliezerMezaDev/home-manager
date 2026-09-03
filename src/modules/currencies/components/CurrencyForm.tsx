@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@shadcn/components/ui/dialog"
+import { toastError, toastSuccess } from "@shared/lib/toast-utils"
 
 interface CurrencyFormProps {
   userId: string
@@ -68,14 +69,16 @@ export function CurrencyForm({
       if (currency) {
         const { updateCurrency } = await import("../actions/currencies-actions")
         const updated = await updateCurrency(currency.id, data)
+        toastSuccess("Moneda actualizada")
         onSuccess({ ...currency, ...updated })
       } else {
         const { createCurrency } = await import("../actions/currencies-actions")
         const created = await createCurrency(userId, data)
+        toastSuccess("Moneda creada")
         onSuccess(created)
       }
     } catch (error) {
-      console.error("Error:", error)
+      toastError(error instanceof Error ? error.message : "Error al guardar")
     } finally {
       setIsLoading(false)
     }

@@ -59,13 +59,13 @@ export function Header() {
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
             <Link href="/d/profile">
-              <User className="mr-2 h-4 w-4" />
+              <User className="mr-2 h-6 w-6" />
               Perfil
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="/d/settings">
-              <Settings className="mr-2 h-4 w-4" />
+              <Settings className="mr-2 h-6 w-6" />
               Configuración
             </Link>
           </DropdownMenuItem>
@@ -78,7 +78,7 @@ export function Header() {
               }}
               className="flex w-full items-center text-red-500"
             >
-              <LogOut className="mr-2 h-4 w-4" />
+              <LogOut className="mr-2 h-6 w-6" />
               Cerrar sesión
             </button>
           </DropdownMenuItem>

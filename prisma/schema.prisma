@@ -91,7 +91,7 @@ model Account {
   currency       Currency      @relation(fields: [currencyId], references: [id])
   transactions   Transaction[]
 
-  @@unique([userId, name])
+  @@unique([userId, name, currencyId])
   @@map("accounts")
 }
 

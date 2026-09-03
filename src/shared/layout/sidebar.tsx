@@ -16,6 +16,7 @@ import {
   Settings,
   User,
   Package,
+  Coins,
 } from "lucide-react"
 
 const navItems = [
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/d/transactions", label: "Transacciones", icon: Receipt },
   { href: "/d/accounts", label: "Cuentas", icon: Wallet },
   { href: "/d/categories", label: "Categorías", icon: Tag },
+  { href: "/d/currencies", label: "Monedas", icon: Coins },
   { href: "/d/beneficiaries", label: "Beneficiarios", icon: Users },
   { href: "/d/exchange-rates", label: "Tasas", icon: LineChart },
   { href: "/d/services", label: "Servicios", icon: Plug },
@@ -62,7 +64,7 @@ export function Sidebar() {
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
+                  <item.icon className="h-6 w-6" />
                   {item.label}
                 </Link>
               </li>
@@ -86,7 +88,7 @@ export function Sidebar() {
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
+                  <item.icon className="h-6 w-6" />
                   {item.label}
                 </Link>
               </li>
